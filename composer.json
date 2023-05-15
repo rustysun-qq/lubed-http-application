@@ -1,0 +1,26 @@
+{
+    "type": "project",
+    "license": "proprietary",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.2.5",
+        "ext-json": "*",
+        "ext-iconv": "*",
+        "lubed/supports": "dev-main",
+        "lubed/http-client": "dev-main"
+    },
+    "config": {
+    },
+    "autoload": {
+        "psr-4": {
+            "Lubed\\HttpApplication\\": "src/"
+        }
+    },
+    "scripts": {
+
+    },
+    "conflict": {
+    },
+    "extra": {
+    }
+}
