@@ -19,10 +19,11 @@ final class HttpApplication implements Application
     private $providers;
     private $router;
 
-    public function __construct(Kernel $kernel)
+    public function __construct(Kernel $kernel,$router)
     {
         $this->methods = [];
         $this->kernel = $kernel;
+        $this->router = $router;
     }
 
     public function init()
@@ -36,14 +37,15 @@ final class HttpApplication implements Application
         $this->request_options = $options;
     }
 
-    public function setRouter($router)
-    {
-        $this->router = $router;
-    }
-
     public function getRequest()
     {
         return $this->request;
+    }
+
+
+    public function getRouter():Router
+    {
+        return $this->router;
     }
 
     public function getOptions()
@@ -82,15 +84,13 @@ final class HttpApplication implements Application
             $this->has_run = true;
         }
 
-        $dispatcher = (new DefaultDispatcher($this));
-        $dispatcher->setReflectionFactory(new DefaultReflectionFactory());
-        $response = $dispatcher->dispatch($this->request);
-
-        if ($response instanceof HttpResponse) {
-            $response->send();
-        } else {
-            echo (string) $response;
-        }
+        $dispatcher = new DefaultDispatcher($this->router);
+        $callee = $dispatcher->dispatch($this->request);//dispatch to router
+        $this->kernel->init($callee,$this->request);
+        $body=NULL;
+        $this->kernel->boot($body);
+        $response = new HttpResponse($body);
+        $response->send();
 
 die("\n-- dispatch ok--\n");
         return $this->has_run;

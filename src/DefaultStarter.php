@@ -30,7 +30,6 @@ final class DefaultStarter implements Starter
 
     private function init() {
         $this->registerExceptions();
-        $router=$this->registerRouter();
         $this->initApplication();
 
         if (!$this->app)
@@ -40,14 +39,21 @@ final class DefaultStarter implements Starter
             'method'=>__METHOD__
            ]); 
         }
-        $this->app->setRouter($router);
     }
 
     private function initApplication()
     {
         $kernel_class = $this->config->get('kernel');
+
+        if (!class_exists($kernel_class)) {
+           AppExceptions::startFailed(sprintf('http application initial failed:NOT FOUND KERNEL %s',$kernel_class),[
+            'class'=>__CLASS__,
+            'method'=>__METHOD__
+           ]); 
+        }
         $kernel = new $kernel_class();
-        $this->app = new HttpApplication($kernel);
+        $router=$this->registerRouter();
+        $this->app = new HttpApplication($kernel,$router);
         $this->app->init();
     }
 
@@ -70,16 +76,16 @@ echo "\n",implode(',<br/>',$json_lines),"\n";
     private function registerRouter()
     {
         $router_config = $this->config->get('router');
-        if(NULL===$router_config){
+        if (NULL === $router_config) {
             return NULL;
         }
         $parameters = $router_config->get('parameters',true);
         $starter_class = $router_config->get('class');
         $instance = null;
-        if($starter_class&& false !==class_exists($starter_class)){
+        if ($starter_class&& false !==class_exists($starter_class)) {
             $instance = new $starter_class(...$parameters);
         }
-        if($instance && $instance instanceOf Starter){
+        if ($instance && $instance instanceOf Starter) {
             $instance->start();
             return $instance->getInstance();
         }
