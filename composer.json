@@ -14,7 +14,7 @@
         "lubed/router": "dev-main",
         "lubed/container": "dev-main",
         "lubed/template": "dev-main",
-        "lubed/template-blade-parser": "dev-main"
+        "lubed/blade-parser": "dev-main"
     },
     "config": {
     },
