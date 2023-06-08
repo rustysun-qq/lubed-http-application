@@ -2,7 +2,7 @@
     "name": "lubed/http-application",
     "type": "project",
     "license": "proprietary",
-    "prefer-stable": true,
+    "prefer-stable": false,
     "require": {
         "php": ">=8.0",
         "ext-json": "*",
