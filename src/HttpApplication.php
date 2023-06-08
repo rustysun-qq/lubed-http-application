@@ -1,15 +1,14 @@
 <?php
 namespace Lubed\HttpApplication;
-use Lubed\Http\Streams\InputStream;
-use Lubed\Utils\Config;
-use Lubed\Supports\Application;
-use Lubed\Supports\Kernel;
-use Lubed\Http\Response as HttpResponse;
-use Lubed\Http\Uri;
-use Lubed\Reflections\DefaultReflectionFactory;
 
-final class HttpApplication implements Application
-{
+use Lubed\Supports\{Application,Kernel,ServiceProvider,Starter};
+use Lubed\Http\Response as HttpResponse;
+use Lubed\Container\{Container,DefaultContainer};
+use Lubed\Utils\Config;
+
+final class HttpApplication extends DefaultContainer
+{   private $name;
+    private $config;
     private $request;
     private $has_run;
     private $methods;
@@ -17,35 +16,32 @@ final class HttpApplication implements Application
     //boot providers
     private $booted;
     private $providers;
+    //router
     private $router;
 
-    public function __construct(Kernel $kernel,$router)
+    public function __construct(Config $config, string $name='lubed_http_application')
     {
         $this->methods = [];
-        $this->kernel = $kernel;
-        $this->router = $router;
+        $this->config = $config;
+        $this->name = $name;
+        $this->bootContainer();
+        $this->bootKernel();
+        $this->bootRouter();
+
+
     }
 
     public function init()
-    {
-        $this->request = $this->initRequestInstance();
-    }
-
-    public function setRequest(HttpRequest $request, array $options)
-    {
-        $this->request = $request;
-        $this->request_options = $options;
-    }
+    {}
 
     public function getRequest()
     {
-        return $this->request;
+        return $this->kernel->getRequest();
     }
-
 
     public function getRouter():Router
     {
-        return $this->router;
+        return $this->get('lubed_router_router');
     }
 
     public function getOptions()
@@ -55,7 +51,52 @@ final class HttpApplication implements Application
 
     public function getKernel()
     {
-        return $this->kernel;
+        return $this->get('kernel');
+    }
+
+    public function register($provider)
+    {
+        if (! $provider instanceof ServiceProvider) {
+            $provider = new $provider($this);
+        }
+
+        if (array_key_exists($name = get_class($provider), $this->providers)) {
+            return;
+        }
+
+        $this->providers[$name] = $provider;
+
+        if (method_exists($provider, 'register')) {
+            $provider->register();
+        }
+
+        if ($this->booted) {
+            $this->bootProvider($provider);
+        }
+    }
+
+    public function run()
+    {
+        if (!$this->has_run) {
+            $this->has_run = true;
+        }
+
+        $request = $this->get('lubed_http_request');
+        $dispatcher = new DefaultDispatcher($this);
+        $rdi = $dispatcher->dispatch($request);//dispatch to router
+        $callee=[];
+        if($rdi){
+            $callee=[$rdi->getController(),$rdi->getAction()];
+        }
+
+        $this->getKernel()->setRequest($request);
+        $this->getKernel()->init($callee);
+        $body = NULL;
+        $this->getKernel()->boot($body);
+        $response = new HttpResponse($body);
+        $response->send();
+
+        return $this->has_run;
     }
 
     private function boot()
@@ -78,98 +119,72 @@ final class HttpApplication implements Application
         }
     }
 
-    public function run()
+
+    private function bootContainer()
     {
-        if (!$this->has_run) {
-            $this->has_run = true;
-        }
+        static::setInstance($this);
+        $this->instance('app', $this);
+        $this->instance(self::class, $this);
 
-        $dispatcher = new DefaultDispatcher($this->router);
-        $callee = $dispatcher->dispatch($this->request);//dispatch to router
-        $this->kernel->init($callee,$this->request);
-        $body=NULL;
-        $this->kernel->boot($body);
-        $response = new HttpResponse($body);
-        $response->send();
-
-die("\n-- dispatch ok--\n");
-        return $this->has_run;
+        $this->registerContainerAliases();
     }
 
-    private function initRequestInstance()
+    private function bootKernel()
     {
-        $protocol = $_SERVER['SERVER_PROTOCOL'] ?? '';
-        $version = $protocol ? str_replace('HTTP/', '', $protocol) : '1.1';
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $method = $method ? $method : 'GET';
-        $uri = $this->initUriByServerEnv();
-        //get headers
-        $headers = function_exists('getallheaders') ? getallheaders() : [];
-
-        if (!$headers) {
-            $headers=[];
-            foreach ($_SERVER as $name=>$value) {
-                if ('HTTP_'===substr($name, 0, 5)) {
-                    $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name,5)))));
-                    $headers[$header]=$value;
-                }
-                else{
-                    setenv($name,$value);
-                }
-            }
-        }
-        //body
-        $body=new InputStream();
-        $request = new HttpRequest($method, $uri, $headers, $body, $version);
-
-        return $request->withCookies($_COOKIE)
-                       ->withParsedBody($_POST)
-                       ->withQueryParameters($_GET)
-                       ->withFiles($_FILES)
-                       ->withServer($_SERVER);
+        $this->kernel = $this->registerKernel();
     }
 
-    private function initUriByServerEnv() {
-        $uri=new Uri('');
-        $env_https=$_SERVER['HTTPS'] ?? 'off';
-        if ($env_https) {
-            $uri=$uri->withScheme($env_https == 'on' ? 'https' : 'http');
-        }
-        $env_host=$_SERVER['HTTP_HOST'];
-        $env_host=$env_host ? $env_host : $_SERVER['SERVER_NAME'];
+    private function bootRouter()
+    {
+       $this->registerRouter(); 
+    }
 
-        if ($env_host) {
-            $host_info = explode(':',$env_host);
-            $uri=$uri->withHost($host_info[0]??$env_host);
-        }
-        $env_port=$_SERVER['SERVER_PORT'];
-        if ($env_port) {
-            $uri=$uri->withPort($env_port);
-        }
-        $env_uri=$_SERVER['REQUEST_URI'];
-        if ($env_uri) {
-            $uri=$uri->withOriginalUri($env_uri);
-        }
-        $path_info=$_SERVER['PATH_INFO']??NULL;
-        $path=$path_info ? $path_info : $env_uri;
-        if ($path) {
-            $path=current(explode('?', $path));
-            $uri=$uri->withPath($path);
-        }
+    private function registerContainerAliases()
+    {
+        $this->aliases = [
+            'lubed_http_request' => \Lubed\Http\Request::class,
+            'lubed_router_router'=> \Lubed\Router\Router::class,
+        ];
+    }
 
-        //TODO:remove默认格式
-        $format='json';
-
-        if ($path && false !== strpos('.', $format)) {
-            $path_info=explode('.', $path);
-            $format=$path_info && is_array($path_info) ? array_pop($path_info) : $format;
+    private function registerKernel(){
+        $kernel_config = $this->config->get('kernel');
+        if(!$kernel_config){
+           AppExceptions::startFailed('http application kernel config not found',[
+            'method'=>''.__METHOD__
+           ]);
         }
-
-        $this->format=strtolower($format);
-        $env_query=$_SERVER['QUERY_STRING']??'';
-        if ($env_query) {
-            $uri=$uri->withQuery($env_query);
+        $starter_config = $kernel_config->get('starter');
+        $starter_class = $starter_config->get('class');
+        if(!$starter_class||false === class_exists($starter_class)){
+            AppExceptions::startFailed('http application kernel starter not found',[
+            'method'=>''.__METHOD__
+           ]);
         }
-        return $uri;
+        $parameters = $starter_config->get('parameters');
+        if(!$parameters){
+            AppExceptions::startFailed('http application kernel starter parameter is invalid',[
+            'method'=>''.__METHOD__
+           ]);   
+        }
+        $starter = new $starter_class($parameters,$this);
+        $starter->start();
+    }
+
+    private function registerRouter()
+    {
+        $router_config = $this->config->get('router');
+        if (NULL === $router_config) {
+            return;
+        }
+        $parameters = $router_config->get('parameters');
+        $starter_class = $router_config->get('class');
+        $instance = null;
+        if ($starter_class && false !== class_exists($starter_class)) {
+            $instance = new $starter_class($parameters, $this);
+        }
+        if (null !== $instance) {
+            $instance->start();
+        }
     }
 }

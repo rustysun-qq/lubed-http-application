@@ -3,14 +3,17 @@
     "license": "proprietary",
     "prefer-stable": true,
     "require": {
-        "php": ">=7.2.5",
+        "php": ">=8.0",
         "ext-json": "*",
         "ext-iconv": "*",
+        "psr/http-message": "1.0.1",
         "lubed/utils":"dev-main",
         "lubed/supports": "dev-main",
-        "lubed/http": "dev-main",
-        "lubed/reflection": "dev-main",
-        "lubed/logger": "dev-main"
+        "lubed/mvc-kernel": "dev-main",
+        "lubed/router": "dev-main",
+        "lubed/container": "dev-main",
+        "lubed/template": "dev-main",
+        "lubed/template-blade-parser": "dev-main"
     },
     "config": {
     },
@@ -25,5 +28,8 @@
     "conflict": {
     },
     "extra": {
+        "lubed":{
+            "starter":"\\Lubed\\HttpApplication\\HttpApplicationtStarter"
+        }
     }
 }
