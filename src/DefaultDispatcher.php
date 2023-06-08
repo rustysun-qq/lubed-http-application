@@ -1,18 +1,12 @@
 <?php
 namespace Lubed\HttpApplication;
 
-// use Lubed\Logger\LoggerAware;
 use Lubed\Http\Request;
-use Lubed\Router\Router;
-use Logger;
 use Lubed\Container\Container;
 
 //TODO:???
 class DefaultDispatcher
 {
-    private $logger;
-    private $interceptors=[];
-    private $dispatcher_info;
     private $router;
 
     public function __construct(Container &$app)

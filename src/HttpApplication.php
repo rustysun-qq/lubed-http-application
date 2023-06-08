@@ -1,9 +1,9 @@
 <?php
 namespace Lubed\HttpApplication;
 
-use Lubed\Supports\{Application,Kernel,ServiceProvider,Starter};
+use Lubed\Supports\{ServiceProvider};
 use Lubed\Http\Response as HttpResponse;
-use Lubed\Container\{Container,DefaultContainer};
+use Lubed\Container\{DefaultContainer};
 use Lubed\Utils\Config;
 
 final class HttpApplication extends DefaultContainer

@@ -2,11 +2,8 @@
 namespace Lubed\HttpApplication;
 
 use Closure;
-use Lubed\Container\DefaultContainer;
 use Lubed\Exceptions\DefaultStarter as ExceptionStarter;
 use Lubed\Exceptions\ExceptionResult;
-use Lubed\Http\Streams\InputStream;
-use Lubed\Http\Uri;
 use Lubed\Supports\Starter;
 use Lubed\Utils\Config;
 

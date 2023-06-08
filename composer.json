@@ -7,7 +7,6 @@
         "php": ">=8.0",
         "ext-json": "*",
         "ext-iconv": "*",
-        "psr/http-message": "1.0.1",
         "lubed/utils":"dev-main",
         "lubed/supports": "dev-main",
         "lubed/mvc-kernel": "dev-main",
