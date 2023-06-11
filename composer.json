@@ -11,9 +11,7 @@
         "lubed/supports": "dev-main",
         "lubed/mvc-kernel": "dev-main",
         "lubed/router": "dev-main",
-        "lubed/container": "dev-main",
-        "lubed/template": "dev-main",
-        "lubed/blade-parser": "dev-main"
+        "lubed/container": "dev-main"
     },
     "config": {
     },
