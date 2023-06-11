@@ -25,18 +25,22 @@ final class HttpApplication extends DefaultContainer
         $this->config = $config;
         $this->name = $name;
         $this->bootContainer();
-        $this->bootKernel();
-        $this->bootRouter();
-
-
     }
 
     public function init()
-    {}
+    {
+        $this->registerKernel();
+        $this->registerRouter();
+    }
+
+    public function getConfig():Config
+    {
+        return $this->config;
+    }
 
     public function getRequest()
     {
-        return $this->kernel->getRequest();
+        return $this->get('lubed_http_request');
     }
 
     public function getRouter():Router
@@ -119,31 +123,19 @@ final class HttpApplication extends DefaultContainer
         }
     }
 
-
     private function bootContainer()
     {
         static::setInstance($this);
         $this->instance('app', $this);
         $this->instance(self::class, $this);
-
         $this->registerContainerAliases();
-    }
-
-    private function bootKernel()
-    {
-        $this->kernel = $this->registerKernel();
-    }
-
-    private function bootRouter()
-    {
-       $this->registerRouter(); 
     }
 
     private function registerContainerAliases()
     {
         $this->aliases = [
             'lubed_http_request' => \Lubed\Http\Request::class,
-            'lubed_router_router'=> \Lubed\Router\Router::class,
+            'lubed_router_router'=> \Lubed\Router\Router::class
         ];
     }
 
