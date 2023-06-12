@@ -1,6 +1,8 @@
 <?php
 namespace Lubed\HttpApplication;
 
+use Lubed\Http\RedirectResponse;
+
 class Redirector
 {
     /**
