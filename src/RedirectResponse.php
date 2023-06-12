@@ -3,14 +3,11 @@ namespace Lubed\HttpApplication;
 
 use Lubed\Http\Response;
 use Lubed\Http\Request;
-use Lubed\Http\Streams\Stream;
 
 
 class RedirectResponse extends Response{
     protected $targetUrl;
-    protected function setContent(string $content){
-        $this->withBody(Stream::create($content));
-    }
+
 
     /**
      * Creates a redirect response so that it conforms to the rules defined for a redirect status code.

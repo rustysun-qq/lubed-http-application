@@ -1,12 +1,16 @@
 <?php
 namespace Lubed\HttpApplication;
 
+use Lubed\Data\Connection;
+use Lubed\Utils\Registry;
 use Lubed\Supports\{ServiceProvider};
 use Lubed\Http\Response as HttpResponse;
 use Lubed\Container\{DefaultContainer};
 use Lubed\Utils\Config;
+use Lubed\Data\DefaultDataSource;
+use Lubed\Http\Request;
 
-final class HttpApplication extends DefaultContainer
+class HttpApplication extends DefaultContainer
 {   private $name;
     private $config;
     private $request;
@@ -18,6 +22,8 @@ final class HttpApplication extends DefaultContainer
     private $providers;
     //router
     private $router;
+    //database
+    private $default_dsn;
 
     public function __construct(Config $config, string $name='lubed_http_application')
     {
@@ -33,6 +39,17 @@ final class HttpApplication extends DefaultContainer
         $this->registerRouter();
     }
 
+    public function initRequest($request = null)
+    {
+        if (! $request) {
+            $request = Request::createFromGlobal();
+        }
+
+        $this->instance(Request::class, $request);
+
+        return $request;
+    }
+
     public function getConfig():Config
     {
         return $this->config;
@@ -40,7 +57,7 @@ final class HttpApplication extends DefaultContainer
 
     public function getRequest()
     {
-        return $this->get('lubed_http_request');
+        return $this->request;
     }
 
     public function getRouter():Router
@@ -85,7 +102,8 @@ final class HttpApplication extends DefaultContainer
             $this->has_run = true;
         }
 
-        $request = $this->get('lubed_http_request');
+        $request = $this->initRequest();
+        $this->request = $request;
         $dispatcher = new DefaultDispatcher($this);
         $rdi = $dispatcher->dispatch($request);//dispatch to router
         $callee=[];
@@ -97,10 +115,29 @@ final class HttpApplication extends DefaultContainer
         $this->getKernel()->init($callee);
         $body = NULL;
         $this->getKernel()->boot($body);
-        $response = new HttpResponse($body);
-        $response->send();
+        if(!$body instanceof HttpResponse){
+            $response = new HttpResponse($body);
+            $response->send();
+        }else{
+            $body->send();
+        }
 
         return $this->has_run;
+    }
+    //with database
+
+    public function withDatabase() {
+        $config = $this->getConfig();
+        $ds_config=$config->get('data_sources');
+        if($ds_config) {
+            $ds=new DefaultDataSource($ds_config);
+            $this->default_dsn = $ds_config->get('default');
+            $this->alias(Lubed\Data\DefaultDataSource::class,'data_source');
+            $this->instance('data_source',$ds);
+            $registry = Registry::getInstance();
+            $registry->set('conn',  $ds->getConnection($this->default_dsn));
+        }
+        return $this;
     }
 
     private function boot()
@@ -142,22 +179,22 @@ final class HttpApplication extends DefaultContainer
     private function registerKernel(){
         $kernel_config = $this->config->get('kernel');
         if(!$kernel_config){
-           AppExceptions::startFailed('http application kernel config not found',[
-            'method'=>''.__METHOD__
-           ]);
+            AppExceptions::startFailed('http application kernel config not found',[
+                'method'=>''.__METHOD__
+            ]);
         }
         $starter_config = $kernel_config->get('starter');
         $starter_class = $starter_config->get('class');
         if(!$starter_class||false === class_exists($starter_class)){
             AppExceptions::startFailed('http application kernel starter not found',[
-            'method'=>''.__METHOD__
-           ]);
+                'method'=>''.__METHOD__
+            ]);
         }
         $parameters = $starter_config->get('parameters');
         if(!$parameters){
             AppExceptions::startFailed('http application kernel starter parameter is invalid',[
-            'method'=>''.__METHOD__
-           ]);   
+                'method'=>''.__METHOD__
+            ]);
         }
         $starter = new $starter_class($parameters,$this);
         $starter->start();
