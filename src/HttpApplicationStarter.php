@@ -2,7 +2,6 @@
 namespace Lubed\HttpApplication;
 
 use Closure;
-use Exception;
 use Lubed\Exceptions\DefaultStarter as ExceptionStarter;
 use Lubed\Exceptions\ExceptionResult;
 use Lubed\Supports\Starter;
@@ -21,7 +20,14 @@ final class HttpApplicationStarter implements Starter
 
     public function start()
     {
-        return $this->app->run();
+        $app = $this->app;
+        $ds_config = $this->config->get('data_sources');
+
+        if ($ds_config) {
+            return $app->withDatabase($ds_config)->run();
+        }
+
+        return $app->run();
     }
 
     private function exceptionRender(&$app):Closure

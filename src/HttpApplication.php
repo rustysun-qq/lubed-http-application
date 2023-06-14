@@ -126,17 +126,14 @@ class HttpApplication extends DefaultContainer
     }
     //with database
 
-    public function withDatabase() {
-        $config = $this->getConfig();
-        $ds_config=$config->get('data_sources');
-        if($ds_config) {
-            $ds=new DefaultDataSource($ds_config);
-            $this->default_dsn = $ds_config->get('default');
-            $this->alias(Lubed\Data\DefaultDataSource::class,'data_source');
-            $this->instance('data_source',$ds);
-            $registry = Registry::getInstance();
-            $registry->set('conn',  $ds->getConnection($this->default_dsn));
-        }
+    public function withDatabase(Config $ds_config) {
+        $ds=new DefaultDataSource($ds_config);
+        $this->default_dsn = $ds_config->get('default');
+        $this->alias(Lubed\Data\DefaultDataSource::class,'data_source');
+        $this->instance('data_source',$ds);
+        $registry = Registry::getInstance();
+        $registry->set('conn',  $ds->getConnection($this->default_dsn));
+
         return $this;
     }
 
