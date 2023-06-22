@@ -2,11 +2,12 @@
 namespace Lubed\HttpApplication;
 
 use Lubed\Http\Request;
+use Lubed\Router\Router;
+use Lubed\Router\Routing\RoutingDestination;
 use Lubed\Utils\Registry;
 
-//TODO:???
 class DefaultDispatcher {
-    private $router;
+    private Router $router;
 
     public function __construct() {
         $registry=Registry::getInstance();
@@ -18,18 +19,18 @@ class DefaultDispatcher {
         }
     }
 
-    public function dispatch(Request &$request) {
+    public function dispatch(Request &$request):?RoutingDestination {
         $method=$request->getMethod();
         $uri=$request->getUri();
         $path=$uri->getPath();
         $key=sprintf('%s %s', $method, $path);
-        $callee=$this->router->routing($key);
-        if (!$callee) {
+        $destination=$this->router->routing($method,$path);
+        if (!$destination) {
             AppExceptions::dispatchFailed(sprintf('Routing Failed:INVALID PATH %s', $path), [
                 'method'=>__METHOD__
             ]);
         }
         $request->setRouted(true);
-        return $callee;
+        return $destination;
     }
 }

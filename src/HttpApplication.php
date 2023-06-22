@@ -105,14 +105,9 @@ class HttpApplication extends DefaultContainer
         $request = $this->initRequest();
         $this->request = $request;
         $dispatcher = new DefaultDispatcher($this);
-        $rdi = $dispatcher->dispatch($request);//dispatch to router
-        $callee=[];
-        if($rdi){
-            $callee=[$rdi->getController(),$rdi->getAction()];
-        }
-
+        $destination = $dispatcher->dispatch($request);//dispatch to router
         $this->getKernel()->setRequest($request);
-        $this->getKernel()->init($callee);
+        $this->getKernel()->init($destination);
         $body = NULL;
         $this->getKernel()->boot($body);
         if(!$body instanceof HttpResponse){
