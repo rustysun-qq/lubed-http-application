@@ -3,15 +3,16 @@
     "type": "project",
     "license": "proprietary",
     "prefer-stable": false,
+    "version": "0.2",
     "require": {
         "php": ">=8.0",
         "ext-json": "*",
         "ext-iconv": "*",
-        "lubed/utils":"dev-main",
-        "lubed/supports": "dev-main",
-        "lubed/mvc-kernel": "dev-main",
-        "lubed/router": "dev-main",
-        "lubed/container": "dev-main"
+        "lubed/utils":"0.2",
+        "lubed/supports": "0.2",
+        "lubed/mvc-kernel": "0.2",
+        "lubed/router": "0.2",
+        "lubed/container": "0.2"
     },
     "config": {
     },
